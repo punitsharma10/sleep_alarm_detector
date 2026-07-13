@@ -1,0 +1,49 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: sad-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./server
+    container_name: sad-api
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGO_URI: mongodb://mongo:27017/sleep_alarm_detector
+      JWT_ACCESS_SECRET: change-me-access-secret
+      JWT_REFRESH_SECRET: change-me-refresh-secret
+      JWT_ACCESS_EXPIRES: 15m
+      JWT_REFRESH_EXPIRES: 7d
+      CLIENT_ORIGIN: http://localhost:8080
+    ports:
+      - "5000:5000"
+
+  web:
+    build:
+      context: ./client
+      args:
+        VITE_API_URL: http://localhost:5000/api
+    container_name: sad-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  mongo-data:
