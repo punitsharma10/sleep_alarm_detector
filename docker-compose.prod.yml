@@ -1,0 +1,50 @@
+# Production stack for a single EC2 instance (free tier).
+# - api : Express backend (connects to MongoDB Atlas)
+# - web : React frontend served by NGINX, which also proxies /api -> api
+# - caddy: reverse proxy that terminates HTTPS automatically (Let's Encrypt)
+#
+# All values in ${...} come from a `.env` file placed next to this file ON THE
+# SERVER (never committed to git). See DEPLOY_AWS_FREE.md.
+
+services:
+  api:
+    build: ./server
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGO_URI: ${MONGO_URI}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_EXPIRES: ${JWT_ACCESS_EXPIRES:-15m}
+      JWT_REFRESH_EXPIRES: ${JWT_REFRESH_EXPIRES:-7d}
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN}
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./client
+      args:
+        # Same-origin: the browser calls /api and NGINX proxies it to `api`.
+        VITE_API_URL: /api
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

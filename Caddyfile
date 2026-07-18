@@ -1,0 +1,7 @@
+# Caddy automatically obtains and renews a free HTTPS certificate for SITE_ADDRESS
+# (your DuckDNS domain) and reverse-proxies all traffic to the NGINX `web` container,
+# which serves the React app and proxies /api to the backend.
+{$SITE_ADDRESS} {
+	encode gzip
+	reverse_proxy web:80
+}
