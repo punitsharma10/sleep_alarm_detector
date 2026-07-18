@@ -6,6 +6,9 @@ coverage/
 .env
 .env.*
 !.env.example
+
+# Personal deploy notes — contains real secrets/IPs, must stay local only
+DEPLOY_AWS_FREE.md
 .DS_Store
 .vscode/
 .idea/
