@@ -4,6 +4,9 @@
 
 > Detect fatigue before it becomes dangerous using AI Computer Vision.
 
+🌐 **Live demo:** https://sleepalarm-punit.duckdns.org
+🚀 Deployed on AWS EC2 with Docker, Caddy (auto-HTTPS), and GitHub Actions CI/CD.
+
 Sleep Alarm Detector is a production-ready MERN application that uses your webcam and
 Google MediaPipe Face Mesh to track facial landmarks in real time, compute the
 **Eye Aspect Ratio (EAR)**, and raise a loud alarm when your eyes stay closed for
