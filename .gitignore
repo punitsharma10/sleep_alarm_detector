@@ -14,3 +14,6 @@ DEPLOY_AWS_FREE.md
 .idea/
 server/uploads/*
 !server/uploads/.gitkeep
+
+# Claude Code local settings (machine-specific, not for sharing)
+.claude/settings.local.json
