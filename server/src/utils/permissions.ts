@@ -30,6 +30,53 @@ export function fullPermissions(): Permissions {
   return { create: true, view: true, edit: true, delete: true };
 }
 
+/** Page/module access — controls which sidebar pages a user can reach. */
+export type ModuleKey =
+  | 'dashboard'
+  | 'liveDetection'
+  | 'history'
+  | 'analytics'
+  | 'users'
+  | 'settings'
+  | 'profile';
+
+export const MODULE_KEYS: ModuleKey[] = [
+  'dashboard',
+  'liveDetection',
+  'history',
+  'analytics',
+  'users',
+  'settings',
+  'profile',
+];
+
+export type ModuleAccess = Record<ModuleKey, boolean>;
+
+export function fullModules(): ModuleAccess {
+  return {
+    dashboard: true,
+    liveDetection: true,
+    history: true,
+    analytics: true,
+    users: true,
+    settings: true,
+    profile: true,
+  };
+}
+
+/** Sensible default for a brand-new user (own screens, no user management). */
+export function defaultModules(): ModuleAccess {
+  return {
+    dashboard: true,
+    liveDetection: true,
+    history: true,
+    analytics: false,
+    users: false,
+    settings: false,
+    profile: true,
+  };
+}
+
 export interface ActorLike {
   _id: { toString(): string };
   role: 'superadmin' | 'orgUser';

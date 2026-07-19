@@ -6,7 +6,7 @@
 import { connectDatabase, disconnectDatabase } from '../config/db';
 import { env } from '../config/env';
 import { User } from '../models/User';
-import { fullPermissions } from '../utils/permissions';
+import { fullPermissions, fullModules } from '../utils/permissions';
 import { logger } from '../utils/logger';
 
 async function seed() {
@@ -20,6 +20,7 @@ async function seed() {
     existing.status = 'active';
     existing.level = 10;
     existing.permissions = fullPermissions();
+    existing.modules = fullModules();
     existing.organization = null;
     // Reset the password to the configured one so it's always known.
     existing.password = env.superAdmin.password;
@@ -34,6 +35,7 @@ async function seed() {
       status: 'active',
       level: 10,
       permissions: fullPermissions(),
+      modules: fullModules(),
       organization: null,
     });
     logger.info(`Super admin created: ${email}`);

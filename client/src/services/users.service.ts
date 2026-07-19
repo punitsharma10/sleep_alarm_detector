@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { ManagedUser, Permissions, DetectionEvent, Pagination } from '@/types';
+import type { ManagedUser, Permissions, ModuleAccess, DetectionEvent, Pagination } from '@/types';
 
 export interface CreateUserPayload {
   name: string;
@@ -8,6 +8,7 @@ export interface CreateUserPayload {
   designation: string;
   level: number;
   permissions: Permissions;
+  modules: ModuleAccess;
 }
 
 export type UpdateUserPayload = Partial<Omit<CreateUserPayload, 'email'>> & {

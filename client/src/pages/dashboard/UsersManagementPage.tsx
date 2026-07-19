@@ -86,6 +86,7 @@ export default function UsersManagementPage() {
         designation: values.designation,
         level: values.level,
         permissions: values.permissions,
+        modules: values.modules,
         status: values.status,
       };
       if (values.password) payload.password = values.password;
@@ -98,6 +99,7 @@ export default function UsersManagementPage() {
         designation: values.designation,
         level: values.level,
         permissions: values.permissions,
+        modules: values.modules,
       });
     }
   };

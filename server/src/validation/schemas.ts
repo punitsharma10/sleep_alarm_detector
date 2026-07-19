@@ -34,6 +34,16 @@ const permissionsShape = z.object({
   delete: z.boolean(),
 });
 
+const modulesShape = z.object({
+  dashboard: z.boolean(),
+  liveDetection: z.boolean(),
+  history: z.boolean(),
+  analytics: z.boolean(),
+  users: z.boolean(),
+  settings: z.boolean(),
+  profile: z.boolean(),
+});
+
 export const createUserSchema = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email('Invalid email'),
@@ -41,6 +51,7 @@ export const createUserSchema = z.object({
   designation: z.string().min(1).max(60),
   level: z.number().int().min(1).max(10),
   permissions: permissionsShape,
+  modules: modulesShape,
 });
 
 export const updateUserSchema = z.object({
@@ -49,6 +60,7 @@ export const updateUserSchema = z.object({
   designation: z.string().min(1).max(60).optional(),
   level: z.number().int().min(1).max(10).optional(),
   permissions: permissionsShape.optional(),
+  modules: modulesShape.optional(),
   status: z.enum(['active', 'inactive']).optional(),
 });
 

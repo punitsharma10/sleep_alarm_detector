@@ -22,6 +22,17 @@ export interface Permissions {
 export type UserRole = 'superadmin' | 'orgUser';
 export type UserStatus = 'active' | 'inactive';
 
+export type ModuleKey =
+  | 'dashboard'
+  | 'liveDetection'
+  | 'history'
+  | 'analytics'
+  | 'users'
+  | 'settings'
+  | 'profile';
+
+export type ModuleAccess = Record<ModuleKey, boolean>;
+
 export interface User {
   _id: string;
   name: string;
@@ -32,6 +43,7 @@ export interface User {
   designation: string;
   level: number;
   permissions: Permissions;
+  modules: ModuleAccess;
   status: UserStatus;
   settings: UserSettings;
   createdAt?: string;
@@ -45,6 +57,7 @@ export interface ManagedUser {
   designation: string;
   level: number;
   permissions: Permissions;
+  modules: ModuleAccess;
   status: UserStatus;
   createdAt: string;
 }

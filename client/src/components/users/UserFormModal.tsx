@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { maxAssignableLevel } from '@/lib/permissions';
-import { PERMISSION_LABELS } from '@/lib/constants';
-import type { ManagedUser, Permissions, User, PermissionAction } from '@/types';
+import { PERMISSION_LABELS, MODULES } from '@/lib/constants';
+import type { ManagedUser, Permissions, ModuleAccess, User, PermissionAction, ModuleKey } from '@/types';
 
 const DESIGNATIONS = ['User', 'Driver', 'Supervisor', 'Operator', 'Manager'];
 
@@ -16,6 +16,7 @@ export interface UserFormValues {
   designation: string;
   level: number;
   permissions: Permissions;
+  modules: ModuleAccess;
   status: 'active' | 'inactive';
 }
 
@@ -30,6 +31,15 @@ interface Props {
 }
 
 const emptyPerms = (): Permissions => ({ create: false, view: false, edit: false, delete: false });
+const defaultModules = (): ModuleAccess => ({
+  dashboard: true,
+  liveDetection: true,
+  history: true,
+  analytics: false,
+  users: false,
+  settings: false,
+  profile: true,
+});
 
 export function UserFormModal({ open, mode, actor, initial, submitting, onClose, onSubmit }: Props) {
   const maxLevel = maxAssignableLevel(actor);
@@ -40,6 +50,7 @@ export function UserFormModal({ open, mode, actor, initial, submitting, onClose,
     designation: 'User',
     level: 1,
     permissions: emptyPerms(),
+    modules: defaultModules(),
     status: 'active',
   });
 
@@ -53,6 +64,7 @@ export function UserFormModal({ open, mode, actor, initial, submitting, onClose,
         designation: initial.designation,
         level: initial.level,
         permissions: { ...initial.permissions },
+        modules: { ...initial.modules },
         status: initial.status,
       });
     } else {
@@ -63,6 +75,7 @@ export function UserFormModal({ open, mode, actor, initial, submitting, onClose,
         designation: 'User',
         level: Math.min(1, maxLevel),
         permissions: emptyPerms(),
+        modules: defaultModules(),
         status: 'active',
       });
     }
@@ -74,11 +87,16 @@ export function UserFormModal({ open, mode, actor, initial, submitting, onClose,
   const togglePerm = (p: PermissionAction) =>
     setValues((prev) => ({ ...prev, permissions: { ...prev.permissions, [p]: !prev.permissions[p] } }));
 
+  const toggleModule = (m: ModuleKey) =>
+    setValues((prev) => ({ ...prev, modules: { ...prev.modules, [m]: !prev.modules[m] } }));
+
   const levelOptions = Array.from({ length: maxLevel }, (_, i) => i + 1);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(values);
+    // If they don't have the Users page, user-management permissions are meaningless.
+    const permissions = values.modules.users ? values.permissions : emptyPerms();
+    onSubmit({ ...values, permissions });
   };
 
   return createPortal(
@@ -108,7 +126,7 @@ export function UserFormModal({ open, mode, actor, initial, submitting, onClose,
               You can assign level 1–{maxLevel} and grant only permissions you hold.
             </p>
 
-            <div className="mt-5 space-y-4">
+            <div className="mt-5 space-y-5">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="label">Full name</label>
@@ -157,33 +175,62 @@ export function UserFormModal({ open, mode, actor, initial, submitting, onClose,
                 </div>
               </div>
 
+              {/* Page access */}
               <div>
-                <label className="label">Permissions</label>
+                <label className="label">Page access</label>
+                <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">Which pages this user sees in their sidebar.</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {(Object.keys(PERMISSION_LABELS) as PermissionAction[]).map((p) => {
-                    const allowed = actor.permissions[p];
-                    return (
-                      <button
-                        type="button"
-                        key={p}
-                        disabled={!allowed}
-                        onClick={() => togglePerm(p)}
-                        className={`flex items-center justify-between rounded-xl border px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                          values.permissions[p]
-                            ? 'border-brand-500 bg-brand-500/10 text-brand-500'
-                            : 'border-slate-200 dark:border-white/10'
-                        }`}
-                      >
-                        {PERMISSION_LABELS[p]}
-                        <span className={`h-2 w-2 rounded-full ${values.permissions[p] ? 'bg-brand-500' : 'bg-slate-300 dark:bg-white/20'}`} />
-                      </button>
-                    );
-                  })}
+                  {MODULES.map((m) => (
+                    <button
+                      type="button"
+                      key={m.key}
+                      onClick={() => toggleModule(m.key)}
+                      className={`flex items-center justify-between rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                        values.modules[m.key]
+                          ? 'border-brand-500 bg-brand-500/10 text-brand-500'
+                          : 'border-slate-200 dark:border-white/10'
+                      }`}
+                    >
+                      {m.label}
+                      <span className={`h-2 w-2 rounded-full ${values.modules[m.key] ? 'bg-brand-500' : 'bg-slate-300 dark:bg-white/20'}`} />
+                    </button>
+                  ))}
                 </div>
-                <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-                  Greyed-out permissions are ones you don't have, so you can't grant them.
-                </p>
               </div>
+
+              {/* User-management permissions (only meaningful with Users page) */}
+              {values.modules.users && (
+                <div>
+                  <label className="label">User management permissions</label>
+                  <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+                    What this user can do on the Users page (for users below their level).
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(Object.keys(PERMISSION_LABELS) as PermissionAction[]).map((p) => {
+                      const allowed = actor.permissions[p];
+                      return (
+                        <button
+                          type="button"
+                          key={p}
+                          disabled={!allowed}
+                          onClick={() => togglePerm(p)}
+                          className={`flex items-center justify-between rounded-xl border px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                            values.permissions[p]
+                              ? 'border-brand-500 bg-brand-500/10 text-brand-500'
+                              : 'border-slate-200 dark:border-white/10'
+                          }`}
+                        >
+                          {PERMISSION_LABELS[p]}
+                          <span className={`h-2 w-2 rounded-full ${values.permissions[p] ? 'bg-brand-500' : 'bg-slate-300 dark:bg-white/20'}`} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    Greyed-out permissions are ones you don't have, so you can't grant them.
+                  </p>
+                </div>
+              )}
 
               {mode === 'edit' && (
                 <label className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5 dark:border-white/10">

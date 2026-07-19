@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { User, IUser } from '../models/User';
 import { Organization } from '../models/Organization';
 import { ApiError } from '../utils/ApiError';
-import { fullPermissions } from '../utils/permissions';
+import { fullPermissions, fullModules } from '../utils/permissions';
 import { signAccessToken, signRefreshToken } from '../utils/token';
 
 export function toPublicUser(user: IUser) {
@@ -16,6 +16,7 @@ export function toPublicUser(user: IUser) {
     designation: user.designation,
     level: user.level,
     permissions: user.permissions,
+    modules: user.modules,
     status: user.status,
     settings: user.settings,
   };
@@ -60,6 +61,7 @@ export async function signupOrganization(
     designation: 'Admin',
     level: 10,
     permissions: fullPermissions(),
+    modules: fullModules(),
     status: 'active',
   });
 

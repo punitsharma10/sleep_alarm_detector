@@ -1,6 +1,6 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { Permissions, emptyPermissions } from '../utils/permissions';
+import { Permissions, emptyPermissions, ModuleAccess, defaultModules } from '../utils/permissions';
 
 export interface UserSettings {
   earThreshold: number;
@@ -39,6 +39,7 @@ export interface IUser extends Document {
   designation: string; // display label e.g. Driver / Supervisor
   level: number; // 1..10 authority (10 = org admin/owner)
   permissions: Permissions;
+  modules: ModuleAccess;
   status: UserStatus;
   createdBy?: Types.ObjectId;
   settings: UserSettings;
@@ -74,6 +75,19 @@ const permissionsSchema = new Schema<Permissions>(
   { _id: false }
 );
 
+const modulesSchema = new Schema<ModuleAccess>(
+  {
+    dashboard: { type: Boolean, default: true },
+    liveDetection: { type: Boolean, default: true },
+    history: { type: Boolean, default: true },
+    analytics: { type: Boolean, default: false },
+    users: { type: Boolean, default: false },
+    settings: { type: Boolean, default: false },
+    profile: { type: Boolean, default: true },
+  },
+  { _id: false }
+);
+
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true, trim: true, maxlength: 80 },
@@ -92,6 +106,7 @@ const userSchema = new Schema<IUser>(
     designation: { type: String, default: 'User', trim: true, maxlength: 60 },
     level: { type: Number, default: 1, min: 1, max: 10 },
     permissions: { type: permissionsSchema, default: () => emptyPermissions() },
+    modules: { type: modulesSchema, default: () => defaultModules() },
     status: { type: String, enum: ['active', 'inactive'], default: 'active', index: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     settings: { type: settingsSchema, default: () => ({ ...defaultSettings }) },

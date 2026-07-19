@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   ScanFace,
@@ -15,25 +15,79 @@ import {
 import { Logo } from '@/components/common/Logo';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
-import { hasAnyManagePermission } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
+import type { ModuleKey } from '@/types';
+
+const MODULE_ICONS: Record<ModuleKey, typeof LayoutDashboard> = {
+  dashboard: LayoutDashboard,
+  liveDetection: ScanFace,
+  history: History,
+  analytics: BarChart3,
+  users: Users,
+  settings: Settings,
+  profile: User,
+};
+
+const MODULE_NAV: { key: ModuleKey; to: string; label: string; end?: boolean }[] = [
+  { key: 'dashboard', to: '/app', label: 'Dashboard', end: true },
+  { key: 'liveDetection', to: '/app/detection', label: 'Live Detection' },
+  { key: 'history', to: '/app/history', label: 'History' },
+  { key: 'analytics', to: '/app/analytics', label: 'Analytics' },
+  { key: 'users', to: '/app/users', label: 'Users' },
+  { key: 'settings', to: '/app/settings', label: 'Settings' },
+  { key: 'profile', to: '/app/profile', label: 'Profile' },
+];
+
+/** Which module a dashboard path belongs to (used for access-guarding). */
+function moduleForPath(pathname: string): ModuleKey {
+  if (pathname === '/app' || pathname === '/app/') return 'dashboard';
+  if (pathname.startsWith('/app/detection')) return 'liveDetection';
+  if (pathname.startsWith('/app/history')) return 'history';
+  if (pathname.startsWith('/app/analytics')) return 'analytics';
+  if (pathname.startsWith('/app/users')) return 'users';
+  if (pathname.startsWith('/app/settings')) return 'settings';
+  return 'profile';
+}
 
 export function DashboardLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
 
-  const navItems = [
-    { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
-    { to: '/app/detection', label: 'Live Detection', icon: ScanFace },
-    { to: '/app/history', label: 'History', icon: History },
-    { to: '/app/analytics', label: 'Analytics', icon: BarChart3 },
-    ...(hasAnyManagePermission(user)
-      ? [{ to: '/app/users', label: 'Users', icon: Users, end: false }]
-      : []),
-    { to: '/app/settings', label: 'Settings', icon: Settings },
-    { to: '/app/profile', label: 'Profile', icon: User },
-  ];
+  const modules = user?.modules;
+  const allowed = MODULE_NAV.filter((m) => modules?.[m.key]);
+  const navItems = allowed.map((m) => ({ ...m, icon: MODULE_ICONS[m.key] }));
+
+  const handleLogoutBare = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  // A user with zero pages enabled can't be redirected anywhere — show a message.
+  if (modules && allowed.length === 0) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-slate-50 p-6 text-center dark:bg-[#0b1120]">
+        <div>
+          <Logo className="mx-auto mb-4" />
+          <h1 className="text-lg font-semibold">No pages assigned</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Your administrator hasn't given you access to any pages yet.
+          </p>
+          <button onClick={handleLogoutBare} className="mt-4 text-sm font-medium text-brand-500 hover:underline">
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Guard: if the user opens a page they don't have access to, send them to the
+  // first page they can access.
+  const currentModule = moduleForPath(location.pathname);
+  if (modules && !modules[currentModule]) {
+    return <Navigate to={allowed[0].to} replace />;
+  }
 
   const handleLogout = async () => {
     await logout();

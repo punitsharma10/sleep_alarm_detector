@@ -3,6 +3,7 @@ import { DetectionHistory } from '../models/DetectionHistory';
 import { ApiError } from '../utils/ApiError';
 import {
   Permissions,
+  ModuleAccess,
   canActOn,
   canAssignLevel,
   canGrantPermissions,
@@ -16,6 +17,7 @@ export interface CreateUserInput {
   designation: string;
   level: number;
   permissions: Permissions;
+  modules: ModuleAccess;
 }
 
 export interface UpdateUserInput {
@@ -24,6 +26,7 @@ export interface UpdateUserInput {
   designation?: string;
   level?: number;
   permissions?: Permissions;
+  modules?: ModuleAccess;
   status?: 'active' | 'inactive';
 }
 
@@ -44,6 +47,7 @@ export async function listUsers(actor: IUser) {
     designation: u.designation,
     level: u.level,
     permissions: u.permissions,
+    modules: u.modules,
     status: u.status,
     createdAt: u.createdAt,
   }));
@@ -80,6 +84,7 @@ export async function createUser(actor: IUser, input: CreateUserInput) {
     designation: input.designation,
     level: input.level,
     permissions: input.permissions,
+    modules: input.modules,
     role: 'orgUser',
     organization: actor.organization,
     status: 'active',
@@ -135,6 +140,7 @@ export async function updateUser(actor: IUser, targetId: string, input: UpdateUs
   if (input.designation !== undefined) target.designation = input.designation;
   if (input.level !== undefined) target.level = input.level;
   if (input.permissions) target.permissions = input.permissions;
+  if (input.modules) target.modules = input.modules;
   if (input.status !== undefined) target.status = input.status;
 
   await target.save();
