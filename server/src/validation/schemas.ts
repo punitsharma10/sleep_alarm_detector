@@ -1,9 +1,19 @@
 import { z } from 'zod';
 
+// Strong password: 8+ chars with lowercase, uppercase, number and a special char.
+const strongPassword = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(128)
+  .regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
+    'Password must include uppercase, lowercase, number and a special character'
+  );
+
 export const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(80),
   email: z.string().email('Invalid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
+  password: strongPassword,
 });
 
 export const loginSchema = z.object({
@@ -17,14 +27,14 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z.object({
   token: z.string().min(10),
-  password: z.string().min(8).max(128),
+  password: strongPassword,
 });
 
 export const orgSignupSchema = z.object({
   organizationName: z.string().min(2, 'Organization name is too short').max(120),
   name: z.string().min(2, 'Name must be at least 2 characters').max(80),
   email: z.string().email('Invalid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
+  password: strongPassword,
 });
 
 const permissionsShape = z.object({
@@ -47,8 +57,8 @@ const modulesShape = z.object({
 export const createUserSchema = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email('Invalid email'),
-  password: z.string().min(8).max(128),
-  designation: z.string().min(1).max(60),
+  password: strongPassword,
+  designation: z.string().min(1, 'Please select a designation').max(60),
   level: z.number().int().min(1).max(10),
   permissions: permissionsShape,
   modules: modulesShape,
@@ -56,7 +66,7 @@ export const createUserSchema = z.object({
 
 export const updateUserSchema = z.object({
   name: z.string().min(2).max(80).optional(),
-  password: z.string().min(8).max(128).optional(),
+  password: strongPassword.optional(),
   designation: z.string().min(1).max(60).optional(),
   level: z.number().int().min(1).max(10).optional(),
   permissions: permissionsShape.optional(),

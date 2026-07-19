@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { maxAssignableLevel } from '@/lib/permissions';
 import { PERMISSION_LABELS, MODULES } from '@/lib/constants';
+import { isStrongPassword, PASSWORD_HINT } from '@/lib/validators';
 import type { ManagedUser, Permissions, ModuleAccess, User, PermissionAction, ModuleKey } from '@/types';
 
 const DESIGNATIONS = ['User', 'Driver', 'Supervisor', 'Operator', 'Manager'];
@@ -31,15 +34,17 @@ interface Props {
 }
 
 const emptyPerms = (): Permissions => ({ create: false, view: false, edit: false, delete: false });
-const defaultModules = (): ModuleAccess => ({
-  dashboard: true,
-  liveDetection: true,
-  history: true,
+const emptyModules = (): ModuleAccess => ({
+  dashboard: false,
+  liveDetection: false,
+  history: false,
   analytics: false,
   users: false,
   settings: false,
-  profile: true,
+  profile: false,
 });
+
+const Req = () => <span className="text-red-500">*</span>;
 
 export function UserFormModal({ open, mode, actor, initial, submitting, onClose, onSubmit }: Props) {
   const maxLevel = maxAssignableLevel(actor);
@@ -47,10 +52,10 @@ export function UserFormModal({ open, mode, actor, initial, submitting, onClose,
     name: '',
     email: '',
     password: '',
-    designation: 'User',
+    designation: '',
     level: 1,
     permissions: emptyPerms(),
-    modules: defaultModules(),
+    modules: emptyModules(),
     status: 'active',
   });
 
@@ -72,10 +77,10 @@ export function UserFormModal({ open, mode, actor, initial, submitting, onClose,
         name: '',
         email: '',
         password: '',
-        designation: 'User',
+        designation: '',
         level: Math.min(1, maxLevel),
         permissions: emptyPerms(),
-        modules: defaultModules(),
+        modules: emptyModules(),
         status: 'active',
       });
     }
@@ -94,7 +99,19 @@ export function UserFormModal({ open, mode, actor, initial, submitting, onClose,
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    // If they don't have the Users page, user-management permissions are meaningless.
+    if (!values.designation) {
+      toast.error('Please select a designation');
+      return;
+    }
+    if (mode === 'create' && !isStrongPassword(values.password)) {
+      toast.error(PASSWORD_HINT);
+      return;
+    }
+    if (mode === 'edit' && values.password && !isStrongPassword(values.password)) {
+      toast.error(PASSWORD_HINT);
+      return;
+    }
+    // User-management permissions only matter if they have the Users page.
     const permissions = values.modules.users ? values.permissions : emptyPerms();
     onSubmit({ ...values, permissions });
   };
@@ -112,6 +129,7 @@ export function UserFormModal({ open, mode, actor, initial, submitting, onClose,
           />
           <motion.form
             onSubmit={submit}
+            autoComplete="off"
             initial={{ opacity: 0, scale: 0.95, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96 }}
@@ -129,23 +147,25 @@ export function UserFormModal({ open, mode, actor, initial, submitting, onClose,
             <div className="mt-5 space-y-5">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="label">Full name</label>
-                  <input className="input" required value={values.name} onChange={(e) => set('name', e.target.value)} />
+                  <label className="label">Full name <Req /></label>
+                  <input className="input" required autoComplete="off" value={values.name} onChange={(e) => set('name', e.target.value)} />
                 </div>
                 <div>
-                  <label className="label">Designation</label>
-                  <select className="input" value={values.designation} onChange={(e) => set('designation', e.target.value)}>
+                  <label className="label">Designation <Req /></label>
+                  <select className="input" required value={values.designation} onChange={(e) => set('designation', e.target.value)}>
+                    <option value="">Select</option>
                     {DESIGNATIONS.map((d) => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="label">Email {mode === 'edit' && <span className="text-slate-400">(cannot change)</span>}</label>
+                <label className="label">Email <Req /> {mode === 'edit' && <span className="text-slate-400">(cannot change)</span>}</label>
                 <input
                   className="input disabled:opacity-60"
                   type="email"
                   required
+                  autoComplete="off"
                   disabled={mode === 'edit'}
                   value={values.email}
                   onChange={(e) => set('email', e.target.value)}
@@ -155,20 +175,20 @@ export function UserFormModal({ open, mode, actor, initial, submitting, onClose,
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="label">
-                    Password {mode === 'edit' && <span className="text-slate-400">(leave blank to keep)</span>}
+                    Password {mode === 'create' ? <Req /> : <span className="text-slate-400">(leave blank to keep)</span>}
                   </label>
-                  <input
-                    className="input"
-                    type="password"
-                    minLength={8}
+                  <PasswordInput
+                    leftIcon={null}
+                    autoComplete="new-password"
                     required={mode === 'create'}
-                    placeholder={mode === 'edit' ? '••••••••' : 'At least 8 characters'}
+                    placeholder={mode === 'edit' ? '••••••••' : 'Strong password'}
                     value={values.password}
                     onChange={(e) => set('password', e.target.value)}
                   />
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{PASSWORD_HINT}</p>
                 </div>
                 <div>
-                  <label className="label">Level</label>
+                  <label className="label">Level <Req /></label>
                   <select className="input" value={values.level} onChange={(e) => set('level', Number(e.target.value))}>
                     {levelOptions.map((l) => <option key={l} value={l}>Level {l}</option>)}
                   </select>

@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Mail, Lock, KeyRound } from 'lucide-react';
+import { Mail, KeyRound } from 'lucide-react';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { Button } from '@/components/ui/Button';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { forgotPassword, resetPassword } from '@/services/auth.service';
+import { isStrongPassword, PASSWORD_HINT } from '@/lib/validators';
 
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState<'request' | 'reset'>('request');
@@ -36,6 +38,10 @@ export default function ForgotPasswordPage() {
 
   const submitReset = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isStrongPassword(password)) {
+      toast.error(PASSWORD_HINT);
+      return;
+    }
     setBusy(true);
     try {
       await resetPassword(token, password);
@@ -91,20 +97,16 @@ export default function ForgotPasswordPage() {
             </div>
           </div>
           <div>
-            <label className="label" htmlFor="new-password">New password</label>
-            <div className="relative">
-              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                id="new-password"
-                type="password"
-                className="input pl-9"
-                placeholder="At least 8 characters"
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
+            <label className="label" htmlFor="new-password">New password <span className="text-red-500">*</span></label>
+            <PasswordInput
+              id="new-password"
+              autoComplete="new-password"
+              placeholder="Create a strong password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{PASSWORD_HINT}</p>
           </div>
           <Button type="submit" className="w-full" loading={busy} size="lg">
             Update password

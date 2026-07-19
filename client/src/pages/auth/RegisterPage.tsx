@@ -1,10 +1,12 @@
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Mail, Lock, User as UserIcon, Building2 } from 'lucide-react';
+import { Mail, User as UserIcon, Building2 } from 'lucide-react';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { Button } from '@/components/ui/Button';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { useAuth } from '@/context/AuthContext';
+import { PASSWORD_REGEX, PASSWORD_HINT } from '@/lib/validators';
 
 interface FormValues {
   organizationName: string;
@@ -50,9 +52,9 @@ export default function RegisterPage() {
         </>
       }
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate autoComplete="off">
         <div>
-          <label className="label" htmlFor="organizationName">Organization name</label>
+          <label className="label" htmlFor="organizationName">Organization name <span className="text-red-500">*</span></label>
           <div className="relative">
             <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -66,11 +68,12 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="label" htmlFor="name">Admin full name</label>
+          <label className="label" htmlFor="name">Admin full name <span className="text-red-500">*</span></label>
           <div className="relative">
             <UserIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               id="name"
+              autoComplete="off"
               className="input pl-9"
               placeholder="Jane Doe"
               {...register('name', { required: 'Name is required', minLength: { value: 2, message: 'Too short' } })}
@@ -80,13 +83,13 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="label" htmlFor="email">Admin email</label>
+          <label className="label" htmlFor="email">Admin email <span className="text-red-500">*</span></label>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               id="email"
               type="email"
-              autoComplete="email"
+              autoComplete="off"
               className="input pl-9"
               placeholder="admin@acme.com"
               {...register('email', { required: 'Email is required' })}
@@ -96,22 +99,21 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="label" htmlFor="password">Password</label>
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              className="input pl-9"
-              placeholder="At least 8 characters"
-              {...register('password', {
-                required: 'Password is required',
-                minLength: { value: 8, message: 'Must be at least 8 characters' },
-              })}
-            />
-          </div>
-          {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
+          <label className="label" htmlFor="password">Password <span className="text-red-500">*</span></label>
+          <PasswordInput
+            id="password"
+            autoComplete="new-password"
+            placeholder="Create a strong password"
+            {...register('password', {
+              required: 'Password is required',
+              pattern: { value: PASSWORD_REGEX, message: PASSWORD_HINT },
+            })}
+          />
+          {errors.password ? (
+            <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
+          ) : (
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{PASSWORD_HINT}</p>
+          )}
         </div>
 
         <Button type="submit" className="w-full" loading={isSubmitting} size="lg">
