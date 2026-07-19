@@ -8,6 +8,7 @@ import {
   createUserSchema,
   updateUserSchema,
   idParamSchema,
+  userSessionParamsSchema,
 } from '../validation/schemas';
 
 const router = Router();
@@ -28,6 +29,18 @@ router.get(
   requireOrgUser,
   validate(idParamSchema, 'params'),
   userController.getManagedUserDetections
+);
+router.get(
+  '/manage/:id/sessions',
+  requireOrgUser,
+  validate(idParamSchema, 'params'),
+  userController.getManagedUserSessions
+);
+router.get(
+  '/manage/:id/sessions/:sessionId',
+  requireOrgUser,
+  validate(userSessionParamsSchema, 'params'),
+  userController.getManagedUserSession
 );
 router.put(
   '/manage/:id',

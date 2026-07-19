@@ -1,5 +1,12 @@
 import { api } from './api';
-import type { ManagedUser, Permissions, ModuleAccess, DetectionEvent, Pagination } from '@/types';
+import type {
+  ManagedUser,
+  Permissions,
+  ModuleAccess,
+  DetectionEvent,
+  DetectionSession,
+  Pagination,
+} from '@/types';
 
 export interface CreateUserPayload {
   name: string;
@@ -45,6 +52,29 @@ export async function getManagedUserDetections(
     params: { page, limit },
   });
   return data;
+}
+
+export interface UserSessionsResponse {
+  user: ManagedUser;
+  items: DetectionSession[];
+  pagination: Pagination;
+}
+
+export async function getManagedUserSessions(id: string, page = 1, limit = 20): Promise<UserSessionsResponse> {
+  const { data } = await api.get<UserSessionsResponse>(`/user/manage/${id}/sessions`, {
+    params: { page, limit },
+  });
+  return data;
+}
+
+export async function getManagedUserSession(
+  id: string,
+  sessionId: string
+): Promise<{ session: DetectionSession; events: DetectionEvent[] }> {
+  const { data } = await api.get<{ session: DetectionSession; events: DetectionEvent[] }>(
+    `/user/manage/${id}/sessions/${sessionId}`
+  );
+  return { session: data.session, events: data.events };
 }
 
 export async function updateManagedUser(id: string, payload: UpdateUserPayload): Promise<ManagedUser> {

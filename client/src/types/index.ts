@@ -98,6 +98,36 @@ export interface Pagination {
   pages: number;
 }
 
+export type SessionActivity = 'driving' | 'studying' | 'working' | 'operating' | 'other';
+export type SessionStatus = 'active' | 'completed';
+
+export interface DetectionSession {
+  _id: string;
+  label: string;
+  activity: SessionActivity;
+  notes?: string;
+  alertnessBefore?: number;
+  status: SessionStatus;
+  startedAt: string;
+  endedAt?: string;
+  durationMs: number;
+  totalEvents: number;
+  blinkCount: number;
+  drowsyCount: number;
+  sleepCount: number;
+  alarmCount: number;
+  averageEar: number;
+  minEar: number;
+  totalClosedMs: number;
+  createdAt: string;
+}
+
+export interface SessionsResponse {
+  success: boolean;
+  items: DetectionSession[];
+  pagination: Pagination;
+}
+
 export interface HistoryResponse {
   success: boolean;
   items: DetectionEvent[];

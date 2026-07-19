@@ -11,6 +11,7 @@ const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'))
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const DetectionPage = lazy(() => import('@/pages/dashboard/DetectionPage'));
 const HistoryPage = lazy(() => import('@/pages/dashboard/HistoryPage'));
+const SessionDetailPage = lazy(() => import('@/pages/dashboard/SessionDetailPage'));
 const AnalyticsPage = lazy(() => import('@/pages/dashboard/AnalyticsPage'));
 const SettingsPage = lazy(() => import('@/pages/dashboard/SettingsPage'));
 const ProfilePage = lazy(() => import('@/pages/dashboard/ProfilePage'));
@@ -39,6 +40,7 @@ export default function App() {
             <Route index element={<DashboardPage />} />
             <Route path="detection" element={<DetectionPage />} />
             <Route path="history" element={<HistoryPage />} />
+            <Route path="history/:id" element={<SessionDetailPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="users" element={<UsersManagementPage />} />
             <Route path="users/:id" element={<UserDetailPage />} />

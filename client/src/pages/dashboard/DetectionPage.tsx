@@ -15,6 +15,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { WebcamStage } from '@/components/detection/WebcamStage';
+import { StartSessionModal } from '@/components/detection/StartSessionModal';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useCamera } from '@/hooks/useCamera';
@@ -25,6 +26,7 @@ import {
 } from '@/hooks/useDrowsinessDetector';
 import { useAuth } from '@/context/AuthContext';
 import { saveDetection } from '@/services/detection.service';
+import { startSession, endSession, type StartSessionPayload } from '@/services/session.service';
 import type { AlarmSound } from '@/lib/alarm';
 import { cn } from '@/lib/utils';
 
@@ -41,6 +43,10 @@ export default function DetectionPage() {
   const [cameraId, setCameraId] = useState<string | undefined>(s?.cameraId);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(s?.alarmVolume ?? 0.8);
+  const [sessionModalOpen, setSessionModalOpen] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [activeSession, setActiveSession] = useState<{ id: string; label: string } | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
 
   const detectorSettings: DetectorSettings = useMemo(
     () => ({
@@ -56,17 +62,18 @@ export default function DetectionPage() {
   const saveMutation = useMutation({
     mutationFn: saveDetection,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['history'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
     },
   });
 
   const handleEpisode = useCallback(
     (episode: DetectionEpisode) => {
+      if (!sessionIdRef.current) return; // only record within a session
       if (episode.type === 'sleep') {
         toast.error('Drowsiness detected — wake up!', { duration: 4000 });
       }
       saveMutation.mutate({
+        session: sessionIdRef.current,
         type: episode.type,
         durationMs: episode.durationMs,
         averageEar: episode.averageEar,
@@ -87,20 +94,46 @@ export default function DetectionPage() {
     onEpisode: handleEpisode,
   });
 
-  const handleStart = async () => {
-    const ok = await requestPermission();
-    if (!ok) {
-      toast.error('Camera permission denied');
-      return;
-    }
+  const beginSession = async (payload: StartSessionPayload) => {
+    setStarting(true);
     try {
+      const ok = await requestPermission();
+      if (!ok) {
+        toast.error('Camera permission denied');
+        return;
+      }
+      const session = await startSession(payload);
+      sessionIdRef.current = session._id;
+      setActiveSession({ id: session._id, label: session.label });
       const stream = await navigator.mediaDevices.getUserMedia({
         video: cameraId ? { deviceId: { exact: cameraId } } : { facingMode: 'user' },
         audio: false,
       });
       await detector.start(stream);
-    } catch {
-      toast.error('Unable to access the selected camera');
+      setSessionModalOpen(false);
+    } catch (e) {
+      sessionIdRef.current = null;
+      setActiveSession(null);
+      toast.error(e instanceof Error ? e.message : 'Unable to start session');
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const handleStop = async () => {
+    const id = sessionIdRef.current;
+    detector.stop();
+    sessionIdRef.current = null;
+    setActiveSession(null);
+    if (id) {
+      try {
+        await endSession(id, detector.blinkCount);
+      } catch {
+        /* ignore finalize errors */
+      }
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      toast.success('Session saved');
     }
   };
 
@@ -116,9 +149,20 @@ export default function DetectionPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Live Detection</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Real-time drowsiness monitoring powered by MediaPipe Face Mesh.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Live Detection</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Real-time drowsiness monitoring powered by MediaPipe Face Mesh.</p>
+        </div>
+        {activeSession && (
+          <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-sm font-medium text-emerald-500">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            {activeSession.label}
+          </span>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -135,11 +179,11 @@ export default function DetectionPage() {
 
           <div className="flex flex-wrap items-center gap-2">
             {!running && !paused ? (
-              <Button onClick={handleStart} loading={detector.status === 'loading'} className="gap-2">
+              <Button onClick={() => setSessionModalOpen(true)} loading={detector.status === 'loading'} className="gap-2">
                 <Play className="h-4 w-4" /> Start
               </Button>
             ) : (
-              <Button variant="danger" onClick={detector.stop} className="gap-2">
+              <Button variant="danger" onClick={handleStop} className="gap-2">
                 <Square className="h-4 w-4" /> Stop
               </Button>
             )}
@@ -254,6 +298,17 @@ export default function DetectionPage() {
           </Card>
         </div>
       </div>
+
+      <StartSessionModal
+        open={sessionModalOpen}
+        starting={starting}
+        settings={user?.settings}
+        devices={devices}
+        cameraId={cameraId}
+        onCameraChange={setCameraId}
+        onClose={() => setSessionModalOpen(false)}
+        onStart={beginSession}
+      />
     </div>
   );
 }

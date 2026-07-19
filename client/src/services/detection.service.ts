@@ -8,6 +8,7 @@ import type {
 } from '@/types';
 
 export interface SaveDetectionPayload {
+  session: string;
   type: DetectionType;
   durationMs: number;
   averageEar: number;

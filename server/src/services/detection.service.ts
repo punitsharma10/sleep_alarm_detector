@@ -1,6 +1,7 @@
 import { DetectionHistory, DetectionType } from '../models/DetectionHistory';
 
 export interface SaveDetectionInput {
+  session: string;
   type: DetectionType;
   durationMs: number;
   averageEar: number;

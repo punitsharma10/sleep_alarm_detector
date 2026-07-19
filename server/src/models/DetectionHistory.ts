@@ -4,6 +4,7 @@ export type DetectionType = 'blink' | 'drowsy' | 'sleep';
 
 export interface IDetection extends Document {
   user: Types.ObjectId;
+  session?: Types.ObjectId;
   type: DetectionType;
   durationMs: number; // how long eyes were closed
   averageEar: number;
@@ -18,6 +19,7 @@ export interface IDetection extends Document {
 const detectionSchema = new Schema<IDetection>(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    session: { type: Schema.Types.ObjectId, ref: 'DetectionSession', index: true },
     type: { type: String, enum: ['blink', 'drowsy', 'sleep'], required: true },
     durationMs: { type: Number, required: true, min: 0 },
     averageEar: { type: Number, required: true },

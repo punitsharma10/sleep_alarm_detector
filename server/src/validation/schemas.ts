@@ -78,6 +78,11 @@ export const idParamSchema = z.object({
   id: z.string().length(24, 'Invalid id'),
 });
 
+export const userSessionParamsSchema = z.object({
+  id: z.string().length(24, 'Invalid id'),
+  sessionId: z.string().length(24, 'Invalid session id'),
+});
+
 export const settingsSchema = z.object({
   earThreshold: z.number().min(0.1).max(0.4).optional(),
   alarmDelay: z.number().min(0.5).max(10).optional(),
@@ -91,6 +96,7 @@ export const settingsSchema = z.object({
 });
 
 export const saveDetectionSchema = z.object({
+  session: z.string().length(24, 'Invalid session id'),
   type: z.enum(['blink', 'drowsy', 'sleep']),
   durationMs: z.number().min(0),
   averageEar: z.number(),
@@ -99,6 +105,22 @@ export const saveDetectionSchema = z.object({
   alarmTriggered: z.boolean().optional().default(false),
   screenshot: z.string().optional(),
   startedAt: z.coerce.date(),
+});
+
+export const startSessionSchema = z.object({
+  label: z.string().min(1).max(120).optional(),
+  activity: z.enum(['driving', 'studying', 'working', 'operating', 'other']).optional(),
+  notes: z.string().max(500).optional(),
+  alertnessBefore: z.number().int().min(1).max(5).optional(),
+});
+
+export const endSessionSchema = z.object({
+  blinkCount: z.number().min(0).optional(),
+});
+
+export const sessionsQuerySchema = z.object({
+  page: z.coerce.number().min(1).optional().default(1),
+  limit: z.coerce.number().min(1).max(100).optional().default(20),
 });
 
 export const deleteHistorySchema = z.object({

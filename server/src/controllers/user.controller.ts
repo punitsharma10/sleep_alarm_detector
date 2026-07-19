@@ -52,6 +52,18 @@ export const getManagedUserDetections = asyncHandler(async (req: Request, res: R
   res.json({ success: true, ...result });
 });
 
+export const getManagedUserSessions = asyncHandler(async (req: Request, res: Response) => {
+  const page = Number(req.query.page ?? 1);
+  const limit = Number(req.query.limit ?? 20);
+  const result = await userService.getUserSessions(req.user!, req.params.id, page, limit);
+  res.json({ success: true, ...result });
+});
+
+export const getManagedUserSession = asyncHandler(async (req: Request, res: Response) => {
+  const result = await userService.getUserSession(req.user!, req.params.id, req.params.sessionId);
+  res.json({ success: true, ...result });
+});
+
 export const updateManagedUser = asyncHandler(async (req: Request, res: Response) => {
   const user = await userService.updateUser(req.user!, req.params.id, req.body);
   res.json({ success: true, user });

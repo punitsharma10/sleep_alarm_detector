@@ -1,5 +1,6 @@
 import { User, IUser } from '../models/User';
 import { DetectionHistory } from '../models/DetectionHistory';
+import { DetectionSession } from '../models/DetectionSession';
 import { ApiError } from '../utils/ApiError';
 import {
   Permissions,
@@ -120,6 +121,36 @@ export async function getUserDetections(actor: IUser, targetId: string, page: nu
     items,
     pagination: { page, limit, total, pages: Math.ceil(total / limit) },
   };
+}
+
+/** Sessions of a managed user (admin read-only, permission-gated). */
+export async function getUserSessions(actor: IUser, targetId: string, page: number, limit: number) {
+  const target = await loadTarget(actor, targetId);
+  if (!canActOn(actor, target, 'view')) {
+    throw ApiError.forbidden('You do not have permission to view this user');
+  }
+  const filter = { user: target._id };
+  const [items, total] = await Promise.all([
+    DetectionSession.find(filter).sort({ startedAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+    DetectionSession.countDocuments(filter),
+  ]);
+  return {
+    user: { _id: target._id, name: target.name, email: target.email, designation: target.designation, level: target.level, permissions: target.permissions, modules: target.modules, status: target.status },
+    items,
+    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+  };
+}
+
+export async function getUserSession(actor: IUser, targetId: string, sessionId: string) {
+  const target = await loadTarget(actor, targetId);
+  if (!canActOn(actor, target, 'view')) {
+    throw ApiError.forbidden('You do not have permission to view this user');
+  }
+  if (!/^[a-f0-9]{24}$/i.test(sessionId)) throw ApiError.notFound('Session not found');
+  const session = await DetectionSession.findOne({ _id: sessionId, user: target._id }).lean();
+  if (!session) throw ApiError.notFound('Session not found');
+  const events = await DetectionHistory.find({ session: session._id }).sort({ createdAt: 1 }).lean();
+  return { session, events };
 }
 
 export async function updateUser(actor: IUser, targetId: string, input: UpdateUserInput) {
