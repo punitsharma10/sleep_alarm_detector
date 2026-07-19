@@ -1,5 +1,6 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { Permissions, emptyPermissions } from '../utils/permissions';
 
 export interface UserSettings {
   earThreshold: number;
@@ -24,12 +25,22 @@ export const defaultSettings: UserSettings = {
   frameRate: 30,
 };
 
+export type UserRole = 'superadmin' | 'orgUser';
+export type UserStatus = 'active' | 'inactive';
+
 export interface IUser extends Document {
   _id: Types.ObjectId;
   name: string;
   email: string;
   password: string;
   avatarUrl?: string;
+  role: UserRole;
+  organization?: Types.ObjectId | null;
+  designation: string; // display label e.g. Driver / Supervisor
+  level: number; // 1..10 authority (10 = org admin/owner)
+  permissions: Permissions;
+  status: UserStatus;
+  createdBy?: Types.ObjectId;
   settings: UserSettings;
   resetToken?: string;
   resetTokenExpires?: Date;
@@ -53,6 +64,16 @@ const settingsSchema = new Schema<UserSettings>(
   { _id: false }
 );
 
+const permissionsSchema = new Schema<Permissions>(
+  {
+    create: { type: Boolean, default: false },
+    view: { type: Boolean, default: false },
+    edit: { type: Boolean, default: false },
+    delete: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true, trim: true, maxlength: 80 },
@@ -66,6 +87,13 @@ const userSchema = new Schema<IUser>(
     },
     password: { type: String, required: true, select: false },
     avatarUrl: { type: String },
+    role: { type: String, enum: ['superadmin', 'orgUser'], default: 'orgUser', index: true },
+    organization: { type: Schema.Types.ObjectId, ref: 'Organization', index: true, default: null },
+    designation: { type: String, default: 'User', trim: true, maxlength: 60 },
+    level: { type: Number, default: 1, min: 1, max: 10 },
+    permissions: { type: permissionsSchema, default: () => emptyPermissions() },
+    status: { type: String, enum: ['active', 'inactive'], default: 'active', index: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     settings: { type: settingsSchema, default: () => ({ ...defaultSettings }) },
     resetToken: { type: String, select: false },
     resetTokenExpires: { type: Date, select: false },

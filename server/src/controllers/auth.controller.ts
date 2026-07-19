@@ -11,14 +11,13 @@ const refreshCookieOptions = {
   path: '/api/auth',
 };
 
-export const register = asyncHandler(async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
-  const result = await authService.register(name, email, password);
-  res.cookie('refreshToken', result.refreshToken, refreshCookieOptions);
+export const signup = asyncHandler(async (req: Request, res: Response) => {
+  const { organizationName, name, email, password } = req.body;
+  await authService.signupOrganization(organizationName, name, email, password);
   res.status(201).json({
     success: true,
-    user: result.user,
-    accessToken: result.accessToken,
+    message:
+      'Organization registered. You can log in once an administrator approves your organization.',
   });
 });
 
@@ -39,7 +38,6 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
   res.json({
     success: true,
     message: 'If an account exists, a reset link has been generated.',
-    // Demo convenience: token is returned directly instead of emailed.
     resetToken: token || undefined,
   });
 });

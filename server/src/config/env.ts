@@ -22,4 +22,9 @@ export const env = {
     refreshExpires: process.env.JWT_REFRESH_EXPIRES ?? '7d',
   },
   clientOrigin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173',
+  superAdmin: {
+    email: process.env.SUPERADMIN_EMAIL ?? 'superadmin@example.com',
+    password: process.env.SUPERADMIN_PASSWORD ?? 'change-me-super-admin',
+    name: process.env.SUPERADMIN_NAME ?? 'Super Admin',
+  },
 } as const;

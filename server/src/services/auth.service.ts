@@ -1,12 +1,24 @@
 import crypto from 'crypto';
 import { User, IUser } from '../models/User';
+import { Organization } from '../models/Organization';
 import { ApiError } from '../utils/ApiError';
+import { fullPermissions } from '../utils/permissions';
 import { signAccessToken, signRefreshToken } from '../utils/token';
 
-export interface AuthResult {
-  user: Pick<IUser, '_id' | 'name' | 'email' | 'avatarUrl' | 'settings'>;
-  accessToken: string;
-  refreshToken: string;
+export function toPublicUser(user: IUser) {
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    avatarUrl: user.avatarUrl,
+    role: user.role,
+    organization: user.organization,
+    designation: user.designation,
+    level: user.level,
+    permissions: user.permissions,
+    status: user.status,
+    settings: user.settings,
+  };
 }
 
 function issueTokens(user: IUser) {
@@ -17,23 +29,47 @@ function issueTokens(user: IUser) {
   };
 }
 
-function toPublicUser(user: IUser) {
-  return {
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    avatarUrl: user.avatarUrl,
-    settings: user.settings,
-  };
-}
-
-export async function register(name: string, email: string, password: string): Promise<AuthResult> {
+/**
+ * Registers a new organization plus its owner (Admin). Both start out unable to
+ * log in until a Super Admin approves the organization. The owner gets level 10
+ * with all permissions.
+ */
+export async function signupOrganization(
+  organizationName: string,
+  name: string,
+  email: string,
+  password: string
+) {
   const existing = await User.findOne({ email });
   if (existing) {
     throw ApiError.conflict('An account with this email already exists');
   }
-  const user = await User.create({ name, email, password });
-  return { user: toPublicUser(user), ...issueTokens(user) };
+
+  const organization = await Organization.create({
+    name: organizationName,
+    email,
+    status: 'pending',
+  });
+
+  const admin = await User.create({
+    name,
+    email,
+    password,
+    role: 'orgUser',
+    organization: organization._id,
+    designation: 'Admin',
+    level: 10,
+    permissions: fullPermissions(),
+    status: 'active',
+  });
+
+  return { organization, adminId: admin._id };
+}
+
+export interface AuthResult {
+  user: ReturnType<typeof toPublicUser>;
+  accessToken: string;
+  refreshToken: string;
 }
 
 export async function login(email: string, password: string): Promise<AuthResult> {
@@ -45,20 +81,35 @@ export async function login(email: string, password: string): Promise<AuthResult
   if (!valid) {
     throw ApiError.unauthorized('Invalid credentials');
   }
+
+  if (user.status === 'inactive') {
+    throw ApiError.forbidden('Your account has been deactivated. Contact your administrator.');
+  }
+
+  // Org users can only log in once their organization is approved.
+  if (user.role === 'orgUser') {
+    const org = await Organization.findById(user.organization);
+    if (!org) {
+      throw ApiError.forbidden('Your organization no longer exists');
+    }
+    if (org.status === 'pending') {
+      throw ApiError.forbidden('Your organization is pending approval by the administrator');
+    }
+    if (org.status === 'rejected') {
+      throw ApiError.forbidden('Your organization registration was rejected');
+    }
+  }
+
   return { user: toPublicUser(user), ...issueTokens(user) };
 }
 
 export async function requestPasswordReset(email: string): Promise<string> {
   const user = await User.findOne({ email });
-  // Do not reveal whether the email exists — but we still need a token for the demo flow.
-  if (!user) {
-    return '';
-  }
+  if (!user) return '';
   const token = crypto.randomBytes(32).toString('hex');
   user.resetToken = crypto.createHash('sha256').update(token).digest('hex');
-  user.resetTokenExpires = new Date(Date.now() + 1000 * 60 * 30); // 30 min
+  user.resetTokenExpires = new Date(Date.now() + 1000 * 60 * 30);
   await user.save();
-  // In production this token would be emailed. We return it so the demo flow can proceed.
   return token;
 }
 

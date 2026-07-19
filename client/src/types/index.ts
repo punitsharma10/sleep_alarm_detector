@@ -10,13 +10,56 @@ export interface UserSettings {
   frameRate: number;
 }
 
+export type PermissionAction = 'create' | 'view' | 'edit' | 'delete';
+
+export interface Permissions {
+  create: boolean;
+  view: boolean;
+  edit: boolean;
+  delete: boolean;
+}
+
+export type UserRole = 'superadmin' | 'orgUser';
+export type UserStatus = 'active' | 'inactive';
+
 export interface User {
   _id: string;
   name: string;
   email: string;
   avatarUrl?: string;
+  role: UserRole;
+  organization?: string | null;
+  designation: string;
+  level: number;
+  permissions: Permissions;
+  status: UserStatus;
   settings: UserSettings;
   createdAt?: string;
+}
+
+/** A user as seen in the management table (a subset of the full user). */
+export interface ManagedUser {
+  _id: string;
+  name: string;
+  email: string;
+  designation: string;
+  level: number;
+  permissions: Permissions;
+  status: UserStatus;
+  createdAt: string;
+}
+
+export type OrgStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Organization {
+  _id: string;
+  name: string;
+  email: string;
+  status: OrgStatus;
+  admin?: { name: string; email: string } | null;
+  memberCount?: number;
+  approvedAt?: string;
+  createdAt: string;
 }
 
 export type DetectionType = 'blink' | 'drowsy' | 'sleep';

@@ -25,9 +25,11 @@ export default function LoginPage() {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      await login(values.email, values.password);
+      const user = await login(values.email, values.password);
       toast.success('Welcome back!');
-      navigate(from, { replace: true });
+      // Route by role: super admin → org approvals, everyone else → the app.
+      const dest = user.role === 'superadmin' ? '/admin' : from;
+      navigate(dest, { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Login failed');
     }

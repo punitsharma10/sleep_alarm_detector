@@ -7,6 +7,7 @@ import {
   BarChart3,
   Settings,
   User,
+  Users,
   LogOut,
   Menu,
   X,
@@ -14,21 +15,25 @@ import {
 import { Logo } from '@/components/common/Logo';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
+import { hasAnyManagePermission } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
-
-const navItems = [
-  { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/app/detection', label: 'Live Detection', icon: ScanFace },
-  { to: '/app/history', label: 'History', icon: History },
-  { to: '/app/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/app/settings', label: 'Settings', icon: Settings },
-  { to: '/app/profile', label: 'Profile', icon: User },
-];
 
 export function DashboardLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+
+  const navItems = [
+    { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
+    { to: '/app/detection', label: 'Live Detection', icon: ScanFace },
+    { to: '/app/history', label: 'History', icon: History },
+    { to: '/app/analytics', label: 'Analytics', icon: BarChart3 },
+    ...(hasAnyManagePermission(user)
+      ? [{ to: '/app/users', label: 'Users', icon: Users, end: false }]
+      : []),
+    { to: '/app/settings', label: 'Settings', icon: Settings },
+    { to: '/app/profile', label: 'Profile', icon: User },
+  ];
 
   const handleLogout = async () => {
     await logout();
