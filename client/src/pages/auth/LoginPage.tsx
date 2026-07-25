@@ -1,9 +1,10 @@
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Mail, Lock } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { Button } from '@/components/ui/Button';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { useAuth } from '@/context/AuthContext';
 
 interface FormValues {
@@ -25,9 +26,11 @@ export default function LoginPage() {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      await login(values.email, values.password);
+      const user = await login(values.email, values.password);
       toast.success('Welcome back!');
-      navigate(from, { replace: true });
+      // Route by role: super admin → org approvals, everyone else → the app.
+      const dest = user.role === 'superadmin' ? '/admin' : from;
+      navigate(dest, { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Login failed');
     }
@@ -46,9 +49,9 @@ export default function LoginPage() {
         </>
       }
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate autoComplete="off">
         <div>
-          <label className="label" htmlFor="email">Email</label>
+          <label className="label" htmlFor="email">Email <span className="text-red-500">*</span></label>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -65,22 +68,17 @@ export default function LoginPage() {
 
         <div>
           <div className="flex items-center justify-between">
-            <label className="label" htmlFor="password">Password</label>
+            <label className="label" htmlFor="password">Password <span className="text-red-500">*</span></label>
             <Link to="/forgot-password" className="text-xs font-medium text-brand-500 hover:underline">
               Forgot?
             </Link>
           </div>
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              className="input pl-9"
-              placeholder="••••••••"
-              {...register('password', { required: 'Password is required' })}
-            />
-          </div>
+          <PasswordInput
+            id="password"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            {...register('password', { required: 'Password is required' })}
+          />
           {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
         </div>
 

@@ -1,10 +1,19 @@
 import { api, setToken } from './api';
 import type { AuthResponse, User } from '@/types';
 
-export async function register(name: string, email: string, password: string): Promise<User> {
-  const { data } = await api.post<AuthResponse>('/auth/register', { name, email, password });
-  setToken(data.accessToken);
-  return data.user;
+export async function signupOrganization(
+  organizationName: string,
+  name: string,
+  email: string,
+  password: string
+): Promise<string> {
+  const { data } = await api.post<{ message: string }>('/auth/signup', {
+    organizationName,
+    name,
+    email,
+    password,
+  });
+  return data.message;
 }
 
 export async function login(email: string, password: string): Promise<User> {

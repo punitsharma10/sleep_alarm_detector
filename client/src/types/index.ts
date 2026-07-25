@@ -10,13 +10,69 @@ export interface UserSettings {
   frameRate: number;
 }
 
+export type PermissionAction = 'create' | 'view' | 'edit' | 'delete';
+
+export interface Permissions {
+  create: boolean;
+  view: boolean;
+  edit: boolean;
+  delete: boolean;
+}
+
+export type UserRole = 'superadmin' | 'orgUser';
+export type UserStatus = 'active' | 'inactive';
+
+export type ModuleKey =
+  | 'dashboard'
+  | 'liveDetection'
+  | 'history'
+  | 'analytics'
+  | 'users'
+  | 'settings'
+  | 'profile';
+
+export type ModuleAccess = Record<ModuleKey, boolean>;
+
 export interface User {
   _id: string;
   name: string;
   email: string;
   avatarUrl?: string;
+  role: UserRole;
+  organization?: string | null;
+  designation: string;
+  level: number;
+  permissions: Permissions;
+  modules: ModuleAccess;
+  status: UserStatus;
   settings: UserSettings;
   createdAt?: string;
+}
+
+/** A user as seen in the management table (a subset of the full user). */
+export interface ManagedUser {
+  _id: string;
+  name: string;
+  email: string;
+  designation: string;
+  level: number;
+  permissions: Permissions;
+  modules: ModuleAccess;
+  status: UserStatus;
+  createdAt: string;
+}
+
+export type OrgStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Organization {
+  _id: string;
+  name: string;
+  email: string;
+  status: OrgStatus;
+  admin?: { name: string; email: string } | null;
+  memberCount?: number;
+  approvedAt?: string;
+  createdAt: string;
 }
 
 export type DetectionType = 'blink' | 'drowsy' | 'sleep';
@@ -40,6 +96,36 @@ export interface Pagination {
   limit: number;
   total: number;
   pages: number;
+}
+
+export type SessionActivity = 'driving' | 'studying' | 'working' | 'operating' | 'other';
+export type SessionStatus = 'active' | 'completed';
+
+export interface DetectionSession {
+  _id: string;
+  label: string;
+  activity: SessionActivity;
+  notes?: string;
+  alertnessBefore?: number;
+  status: SessionStatus;
+  startedAt: string;
+  endedAt?: string;
+  durationMs: number;
+  totalEvents: number;
+  blinkCount: number;
+  drowsyCount: number;
+  sleepCount: number;
+  alarmCount: number;
+  averageEar: number;
+  minEar: number;
+  totalClosedMs: number;
+  createdAt: string;
+}
+
+export interface SessionsResponse {
+  success: boolean;
+  items: DetectionSession[];
+  pagination: Pagination;
 }
 
 export interface HistoryResponse {

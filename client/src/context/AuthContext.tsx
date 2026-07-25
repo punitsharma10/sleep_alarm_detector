@@ -6,8 +6,13 @@ import type { User, UserSettings } from '@/types';
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
+  signupOrg: (
+    organizationName: string,
+    name: string,
+    email: string,
+    password: string
+  ) => Promise<string>;
   logout: () => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
   updateSettings: (settings: UserSettings) => void;
@@ -40,12 +45,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const u = await authService.login(email, password);
     setUser(u);
+    return u;
   }, []);
 
-  const register = useCallback(async (name: string, email: string, password: string) => {
-    const u = await authService.register(name, email, password);
-    setUser(u);
-  }, []);
+  const signupOrg = useCallback(
+    (organizationName: string, name: string, email: string, password: string) =>
+      authService.signupOrganization(organizationName, name, email, password),
+    []
+  );
 
   const logout = useCallback(async () => {
     await authService.logout();
@@ -62,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, updateUser, updateSettings }}
+      value={{ user, loading, login, signupOrg, logout, updateUser, updateSettings }}
     >
       {children}
     </AuthContext.Provider>

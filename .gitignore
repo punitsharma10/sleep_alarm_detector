@@ -9,6 +9,7 @@ coverage/
 
 # Personal deploy notes — contains real secrets/IPs, must stay local only
 DEPLOY_AWS_FREE.md
+RELEASE_NOTES.md
 .DS_Store
 .vscode/
 .idea/
@@ -17,3 +18,6 @@ server/uploads/*
 
 # Claude Code local settings (machine-specific, not for sharing)
 .claude/settings.local.json
+
+# TS build cache
+*.tsbuildinfo

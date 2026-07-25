@@ -21,7 +21,8 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { getStats, getHistory } from '@/services/detection.service';
+import { getStats } from '@/services/detection.service';
+import { getSessions } from '@/services/session.service';
 import { useAuth } from '@/context/AuthContext';
 import { formatDate, formatDuration } from '@/lib/utils';
 import { chartTooltip } from '@/lib/chartTheme';
@@ -32,9 +33,9 @@ export default function DashboardPage() {
     queryKey: ['stats', 'week'],
     queryFn: () => getStats('week'),
   });
-  const { data: history } = useQuery({
-    queryKey: ['history', 1, 5],
-    queryFn: () => getHistory(1, 5),
+  const { data: sessions } = useQuery({
+    queryKey: ['sessions', 1],
+    queryFn: () => getSessions(1, 5),
   });
 
   return (
@@ -99,24 +100,30 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recent events</CardTitle>
+            <CardTitle>Recent sessions</CardTitle>
             <Link to="/app/history" className="text-sm font-medium text-brand-500 hover:underline">
               View all
             </Link>
           </CardHeader>
           <div className="space-y-3">
-            {history && history.items.length > 0 ? (
-              history.items.map((e) => (
-                <div key={e._id} className="flex items-center justify-between text-sm">
-                  <div>
-                    <p className="font-medium capitalize">{e.type}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{formatDate(e.createdAt)}</p>
+            {sessions && sessions.items.length > 0 ? (
+              sessions.items.map((sess) => (
+                <Link
+                  key={sess._id}
+                  to={`/app/history/${sess._id}`}
+                  className="flex items-center justify-between rounded-lg px-1 py-1 text-sm transition hover:bg-slate-50 dark:hover:bg-white/5"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{sess.label}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{formatDate(sess.startedAt)}</p>
                   </div>
-                  <span className="text-xs font-semibold text-slate-500">{formatDuration(e.durationMs)}</span>
-                </div>
+                  <span className="ml-2 shrink-0 text-xs font-semibold text-slate-500">
+                    {sess.alarmCount > 0 ? `${sess.alarmCount} alarm${sess.alarmCount === 1 ? '' : 's'}` : formatDuration(sess.durationMs)}
+                  </span>
+                </Link>
               ))
             ) : (
-              <p className="text-sm text-slate-500 dark:text-slate-400">No events recorded yet.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">No sessions recorded yet.</p>
             )}
           </div>
         </Card>
