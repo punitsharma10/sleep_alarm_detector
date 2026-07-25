@@ -9,6 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "seed:superadmin": "tsx src/seed/superadmin.ts",
+    "seed:superadmin:prod": "node dist/seed/superadmin.js",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit"
   },
